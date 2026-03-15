@@ -8,7 +8,7 @@ import javafx.scene.Node;
 public class SceneNavigator {
     public static FXMLLoader switchScene(Node node, String fxmlFile) {
         try {
-            FXMLLoader loader = new FXMLLoader(SceneNavigator.class.getResource("/com/example/pokemonsdlike/" + fxmlFile));
+            FXMLLoader loader = new FXMLLoader(SceneNavigator.class.getResource("/com/example/pslikemyversion/" + fxmlFile));
             Scene scene = new Scene(loader.load(), 900, 600);
             Stage stage = (Stage) node.getScene().getWindow();
             stage.setScene(scene);

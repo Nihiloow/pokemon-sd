@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<?import javafx.scene.image.ImageView?>
+<AnchorPane prefHeight="600.0" prefWidth="900.0" style="-fx-background-color: #BBBBBB;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sdlikeinterfacetest.ViewController.PokemonDetailController">
+    <children>
+
+        <Button layoutX="20.0" layoutY="20.0" onAction="#onBackClicked" prefHeight="50.0" prefWidth="50.0" style="-fx-background-color: #CC0000; -fx-text-fill: white; -fx-background-radius: 10; -fx-font-weight: bold;" text="X">
+            <font>
+                <Font size="24.0" />
+            </font>
+        </Button>
+
+        <HBox alignment="CENTER" layoutX="100.0" layoutY="80.0" prefHeight="450.0" prefWidth="700.0" spacing="40.0">
+            <children>
+
+                <VBox alignment="CENTER" spacing="20.0">
+                    <children>
+                        <StackPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: white; -fx-background-radius: 20;">
+                            <children>
+                                <Label fx:id="placeholderLabel" text="Sprite&#10;Pokemon" textAlignment="CENTER" textFill="#808080">
+                                    <font>
+                                        <Font name="System Bold" size="18.0" />
+                                    </font>
+                                </Label>
+
+                                <ImageView fx:id="pokemonSprite" fitHeight="160.0" fitWidth="160.0" pickOnBounds="true" preserveRatio="true" />
+                            </children>
+                        </StackPane>
+
+                        <ComboBox fx:id="abilitySelector" prefHeight="40.0" prefWidth="200.0" promptText="Ability" style="-fx-background-radius: 10;" />
+                        <ComboBox fx:id="itemSelector" prefHeight="40.0" prefWidth="200.0" promptText="Item" style="-fx-background-radius: 10;" />
+                    </children>
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="15.0" HBox.hgrow="ALWAYS">
+                    <children>
+                        <ComboBox fx:id="pokemonNameSelector" prefHeight="45.0" prefWidth="350.0" promptText="Choose your Pokemon" style="-fx-background-radius: 5;" />
+
+                        <Separator prefWidth="200.0" visible="false" /> <VBox spacing="10.0">
+                        <children>
+                            <ComboBox fx:id="move1" prefHeight="40.0" prefWidth="350.0" promptText="Move 1" style="-fx-background-radius: 20; -fx-border-color: black; -fx-border-radius: 20;" />
+                            <ComboBox fx:id="move2" prefHeight="40.0" prefWidth="350.0" promptText="Move 2" style="-fx-background-radius: 20; -fx-border-color: black; -fx-border-radius: 20;" />
+                            <ComboBox fx:id="move3" prefHeight="40.0" prefWidth="350.0" promptText="Move 3" style="-fx-background-radius: 20; -fx-border-color: black; -fx-border-radius: 20;" />
+                            <ComboBox fx:id="move4" prefHeight="40.0" prefWidth="350.0" promptText="Move 4" style="-fx-background-radius: 20; -fx-border-color: black; -fx-border-radius: 20;" />
+                        </children>
+                    </VBox>
+                    </children>
+                </VBox>
+            </children>
+        </HBox>
+    </children>
+</AnchorPane>
