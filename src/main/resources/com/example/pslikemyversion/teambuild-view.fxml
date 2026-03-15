@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<HBox prefHeight="600.0" prefWidth="900.0" spacing="50.0" style="-fx-background-color: #BBBBBB;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.sdlikeinterfacetest.ViewController.TeamBuilderController">
+<HBox prefHeight="600.0" prefWidth="900.0" spacing="50.0" style="-fx-background-color: #BBBBBB;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.pslikemyversion.ui.TeamBuilderController">
     <children>
 
         <VBox alignment="CENTER_LEFT" prefWidth="350.0" spacing="20.0">
