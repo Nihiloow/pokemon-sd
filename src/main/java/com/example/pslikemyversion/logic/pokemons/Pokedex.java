@@ -1,32 +1,55 @@
 package com.example.pslikemyversion.logic.pokemons;
 
-import com.example.pslikemyversion.logic.types.Type;
+import com.example.pslikemyversion.core.DatabaseManager;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Pokedex {
 
-    // Simule la liste des noms disponibles
     public static List<String> getAvailableSpecies() {
-        return Arrays.asList("Charmander", "Bulbasaur", "Squirtle", "Pikachu", "Lucario", "Gengar");
+        List<String> species = new ArrayList<>();
+        String query = "SELECT name FROM pokemon"; // Utilise la colonne 'name'
+
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                species.add(rs.getString("name"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return species;
     }
 
-    // Simule la récupération des types selon le nom (Très utile pour ton barème)
-    public static ArrayList<Type> getTypesFor(String name) {
-        ArrayList<Type> types = new ArrayList<>();
-        if (name.equals("Charmander")) types.add(new Type("FIRE"));
-        else if (name.equals("Bulbasaur")) types.add(new Type("GRASS"));
-        else types.add(new Type("NORMAL")); // Type par défaut pour le test
-        return types;
-    }
+    public static Pokemon getPokemonByName(String name) {
+        String query = "SELECT * FROM pokemon WHERE name = ?";
 
-    // Listes génériques pour le moment
-    public static List<String> getAvailableAbilities() {
-        return Arrays.asList("Blaze", "Overgrow", "Torrent", "Static", "Inner Focus", "Levitate");
-    }
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-    public static List<String> getAvailableItems() {
-        return Arrays.asList("Life Orb", "Choice Band", "Leftovers", "Focus Sash");
+            pstmt.setString(1, name);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                // On extrait les stats de la table
+                return new Pokemon(
+                        rs.getString("name"),
+                        new ArrayList<>(),
+                        null,
+                        rs.getInt("hp"),
+                        rs.getInt("attack"),
+                        rs.getInt("spe_attack"),
+                        rs.getInt("defense"),
+                        rs.getInt("spe_defense"),
+                        rs.getInt("speed")
+                );
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

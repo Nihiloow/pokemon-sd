@@ -1,6 +1,7 @@
 module com.example.pslikemyversion {
     requires javafx.controls;
     requires javafx.fxml;
+    requires java.sql;
 
     opens com.example.pslikemyversion to javafx.fxml;
     opens com.example.pslikemyversion.ui to javafx.fxml;

@@ -15,6 +15,7 @@ public class Pokemon implements IPokemon{
     private Passive ability;
     private Object object;
 
+    private int maxHp;
     private Stat hp;
     private Stat attack;
     private Stat specialAttack;
@@ -29,6 +30,7 @@ public class Pokemon implements IPokemon{
                    int speed){
         this.name = name;
 
+        this.maxHp = hp;
         this.hp = new Stat(hp);
         this.attack = new Stat(attack);
         this.specialAttack = new Stat(specialAttack);
@@ -69,6 +71,10 @@ public class Pokemon implements IPokemon{
 
     public Object getObject() {
         return object;
+    }
+
+    public int getMaxHp() {
+        return maxHp;
     }
 
     public Stat getHp() {
@@ -123,7 +129,20 @@ public class Pokemon implements IPokemon{
     }
 
     @Override
-    public void takeDamages(int amount, String damageType, Type type){
+    public void takeDamages(int amount, String damageType, Type type) {
+        // 1. On récupère les PV actuels
+        int currentHp = this.hp.getStat();
 
+        // 2. On calcule les nouveaux PV
+        int newHp = currentHp - amount;
+
+        // 3. Sécurité : on ne descend pas en dessous de 0
+        if (newHp < 0) {
+            newHp = 0;
+        }
+
+        this.hp.setStat(newHp);
+
+        System.out.println(this.name + " a maintenant " + newHp + " PV.");
     }
 }

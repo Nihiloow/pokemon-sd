@@ -12,6 +12,10 @@ public class Stat {
         return this.stat;
     }
 
+    public void setStat(int newValue) {
+        this.stat = newValue;
+    }
+
     public double getCoef() {
         return coef;
     }
