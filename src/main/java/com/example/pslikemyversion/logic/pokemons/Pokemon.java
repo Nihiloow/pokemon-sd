@@ -64,7 +64,7 @@ public class Pokemon implements IPokemon{
     }
 
     public Passive getAbility() {
-        return ability;
+        return this.ability;
     }
 
     public Object getObject() {

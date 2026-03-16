@@ -8,7 +8,6 @@ import javafx.scene.Node;
 public class StartController {
     @FXML
     private void onStartClicked(ActionEvent event) {
-        // On passe à l'écran du Teambuilder
         SceneNavigator.switchScene((Node) event.getSource(), "teambuild-view.fxml");
     }
 }

@@ -4,7 +4,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.Label; // N'oublie pas les Labels !
+import javafx.scene.control.Label;
 
 public class BattleController {
     @FXML private TextArea battleLog;
@@ -13,6 +13,4 @@ public class BattleController {
     @FXML private Label opponentName;
     @FXML private Label playerName;
     @FXML private Button move1, move2, move3, move4;
-
-    // Si ces IDs sont dans le FXML, ils DOIVENT être ici.
 }
