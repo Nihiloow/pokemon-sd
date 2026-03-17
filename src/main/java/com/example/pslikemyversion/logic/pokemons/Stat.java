@@ -2,7 +2,7 @@ package com.example.pslikemyversion.logic.pokemons;
 
 public class Stat {
     private int stat;
-    private double coef;
+    private double coef = 1.0; // Défini à 1.0 pour ne pas multiplier par zéro
 
     public Stat(int stat){
         this.stat = stat;
@@ -25,6 +25,8 @@ public class Stat {
     }
 
     public int getRealStat(){
+        // Si coef est 0, on retourne la stat de base par sécurité
+        if (this.coef == 0) return this.stat;
         return (int)(this.stat * this.coef);
     }
 }

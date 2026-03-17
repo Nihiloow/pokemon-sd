@@ -1,5 +1,6 @@
 package com.example.pslikemyversion.logic.moves;
 
+import com.example.pslikemyversion.logic.pokemons.Pokemon;
 import com.example.pslikemyversion.logic.types.Type;
 
 public abstract class Move implements Imove {
@@ -18,7 +19,18 @@ public abstract class Move implements Imove {
     }
 
     public String getName() { return name; }
-    public int getDamages() { return damages; } // Ajouté [cite: 219]
-    public String getCategory() { return category; } // Ajouté [cite: 222]
+    public int getDamages() { return damages; }
+    public String getCategory() { return category; }
     public Type getType() { return type; }
+
+    // --- CORRECTION : Implémentation par défaut des méthodes de Imove ---
+    @Override
+    public void mainEffect(Pokemon pokemon) {
+        // Par défaut, l'attaque inflige juste des dégâts (géré par CombatSystem)
+    }
+
+    @Override
+    public void sideEffect(Pokemon pokemon) {
+        // Par défaut, pas d'effet secondaire (sera surchargé si besoin) [cite: 325]
+    }
 }

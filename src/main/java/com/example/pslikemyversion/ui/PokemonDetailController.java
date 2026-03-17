@@ -46,14 +46,19 @@ public class PokemonDetailController {
 
     public void setPokemonSlot(int slotIndex) {
         this.currentSlot = slotIndex;
-        placeholderLabel.setText("Modification du Slot #" + slotIndex);
+        placeholderLabel.setText("Editing Slot #" + slotIndex);
 
-        // Persistance : On recharge le Pokémon s'il existe déjà dans la Team
         Pokemon existing = GameSession.getInstance().getPokemon(slotIndex);
         if (existing != null) {
             pokemonNameSelector.setValue(existing.getName());
-            updateAvailableOptions(existing.getName());
-            // On pourrait ici pré-remplir move1.setValue(), etc.
+            updateAvailableOptions(existing.getName()); // Charge les listes filtrées
+
+            // RECHARGE LES CHOIX PRÉCÉDENTS
+            if (existing.getAbility() != null) abilitySelector.setValue(existing.getAbility().getName());
+            if (existing.getHeldItem() != null) itemSelector.setValue(existing.getHeldItem().getName());
+
+            // Recharge les attaques (ex: première attaque)
+            if (!existing.getMoveSet().isEmpty()) move1.setValue(existing.getMoveSet().get(0).getName());
         }
     }
 
@@ -79,7 +84,7 @@ public class PokemonDetailController {
         if (abilitySelector.getValue() != null)
             p.setAbility(PassiveFactory.createAbility(abilitySelector.getValue()));
         if (itemSelector.getValue() != null)
-            p.setObject(PassiveFactory.createItem(itemSelector.getValue()));
+            p.setHeldItem(PassiveFactory.createItem(itemSelector.getValue()));
 
         // 4. Attribution des 4 attaques choisies [cite: 41, 65]
         saveMoves(p);
@@ -97,4 +102,5 @@ public class PokemonDetailController {
             }
         }
     }
+
 }
