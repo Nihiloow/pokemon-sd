@@ -1,35 +1,56 @@
 package com.example.pslikemyversion.engine;
 
-import com.example.pslikemyversion.logic.pokemons.Team;
 import com.example.pslikemyversion.logic.pokemons.Pokemon;
 import com.example.pslikemyversion.logic.moves.Move;
+import com.example.pslikemyversion.logic.types.Type;
 
 public class CombatSystem {
 
-    // On utilise la logique de Team pour savoir si le combat continue [cite: 32]
-    public static boolean isBattleOver(Team playerTeam, Team cpuTeam) {
-        return playerTeam.isDefeated() || cpuTeam.isDefeated();
-    }
-
     public static String performAttack(Pokemon attacker, Pokemon defender, Move move) {
-        // Utilisation de ta formule de dégâts (Physique vs Spécial) [cite: 211, 214]
-        int damage = calculateDamage(attacker, defender, move);
+        // 1. Calcul des dégâts de base (Stats)
+        double baseDamage = calculateRawDamage(attacker, defender, move);
 
-        defender.takeDamages(damage, move.getCategory(), move.getType());
+        // 2. Calcul du multiplicateur de type (Logique de ta collègue déplacée ici)
+        double typeMultiplier = getTypeMultiplier(move.getType(), defender);
 
-        return attacker.getName() + " utilise " + move.getName() + " ! " +
-                defender.getName() + " perd " + damage + " PV.";
+        int finalDamage = (int) (baseDamage * typeMultiplier);
+        defender.takeDamages(finalDamage, move.getCategory(), move.getType());
+
+        // 3. Construction du message de log
+        String effectiveness = "";
+        if (typeMultiplier > 1) effectiveness = " C'est super efficace !";
+        else if (typeMultiplier == 0) effectiveness = " Ça n'affecte pas " + defender.getName() + "...";
+        else if (typeMultiplier < 1) effectiveness = " Ce n'est pas très efficace...";
+
+        return attacker.getName() + " utilise " + move.getName() + " !" + effectiveness +
+                " (" + finalDamage + " dégâts)";
     }
 
-    private static int calculateDamage(Pokemon attacker, Pokemon defender, Move move) {
+    private static double calculateRawDamage(Pokemon attacker, Pokemon defender, Move move) {
         double atk = move.getCategory().equalsIgnoreCase("Physical") ?
                 attacker.getAttack().getRealStat() : attacker.getSpecialAttack().getRealStat();
         double def = move.getCategory().equalsIgnoreCase("Physical") ?
                 defender.getDefense().getRealStat() : defender.getSpecialDefense().getRealStat();
 
-        // Multiplicateur aléatoire (0.85 à 1.0) [cite: 213, 216]
         double rand = 0.85 + (Math.random() * 0.15);
+        // Formule équilibrée (Division par 50 pour éviter les OS)
+        return ((((22 * move.getDamages() * (atk / def)) / 50) + 2) * rand);
+    }
 
-        return (int) (move.getDamages() * (atk / def) * rand);
+    private static double getTypeMultiplier(Type attackType, Pokemon target) {
+        double multiplier = 1.0;
+        for (Type targetType : target.getTypes()) {
+            // On compare les noms des types pour éviter les erreurs d'objets
+            String atkName = attackType.getName();
+
+            if (containsTypeName(targetType.getIsImmuneTo(), atkName)) return 0.0;
+            if (containsTypeName(targetType.getIsWeakTo(), atkName)) multiplier *= 2.0;
+            if (containsTypeName(targetType.getIsResistTo(), atkName)) multiplier *= 0.5;
+        }
+        return multiplier;
+    }
+
+    private static boolean containsTypeName(java.util.List<Type> list, String name) {
+        return list.stream().anyMatch(t -> t.getName().equalsIgnoreCase(name));
     }
 }

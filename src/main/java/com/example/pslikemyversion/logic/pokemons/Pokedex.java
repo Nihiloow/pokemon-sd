@@ -174,4 +174,29 @@ public class Pokedex {
         } catch (SQLException e) { e.printStackTrace(); }
         return null;
     }
+
+    // À ajouter dans Pokedex.java
+    public static void loadTypeInteractions(Type type) {
+        String query = "SELECT t_atk.name AS attacker, ti.multiplier " +
+                "FROM type_interaction ti " +
+                "JOIN type t_atk ON ti.attacker_type_id = t_atk.id " +
+                "JOIN type t_def ON ti.defender_type_id = t_def.id " +
+                "WHERE t_def.name = ?";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setString(1, type.getName());
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                double mult = rs.getDouble("multiplier");
+                Type attackerType = new Type(rs.getString("attacker"));
+
+                if (mult == 0) type.getIsImmuneTo().add(attackerType);
+                else if (mult == 0.5) type.getIsResistTo().add(attackerType);
+                else if (mult == 2.0) type.getIsWeakTo().add(attackerType);
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
 }

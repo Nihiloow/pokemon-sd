@@ -11,17 +11,19 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.Duration;
 import java.util.List;
+import javafx.scene.layout.HBox;
 
 public class BattleController {
     @FXML private TextArea battleLog;
     @FXML private ProgressBar playerHpBar, opponentHpBar;
     @FXML private Label playerName, opponentName;
     @FXML private Button move1, move2, move3, move4;
-    @FXML private Button switchPoke1, switchPoke2;
+    @FXML private HBox switchActionsBox;
 
     private Pokemon playerActive;
     private Pokemon opponentActive;
     private Team playerTeam;
+    private boolean isForcedSwitch = false;
 
     @FXML
     public void initialize() {
@@ -110,58 +112,58 @@ public class BattleController {
 
     @FXML
     private void onSwitchRequested(int index) {
-        // 1. Vérification de l'existence du Pokémon dans la Team
-        if (index < 0 || index >= playerTeam.getPokemons().size()) return;
-
         Pokemon target = playerTeam.getPokemons().get(index);
 
-        // 2. Sécurité : On ne switch pas sur un Pokémon déjà actif ou mort
-        if (target == playerActive) {
-            battleLog.appendText("! " + target.getName() + " est déjà au combat.\n");
-            return;
-        }
-
-        if (target.getHp().getStat() <= 0) {
-            battleLog.appendText("! " + target.getName() + " est KO et ne peut pas combattre.\n");
-            return;
-        }
-
-        // 3. Exécution du Switch
-        battleLog.appendText("> " + playerActive.getName() + ", reviens ! En avant " + target.getName() + " !\n");
-
+        // Logique de switch habituelle...
         playerTeam.setActivePokemonIndex(index);
-        playerActive = target; // Mise à jour de la référence locale
-
-        // 4. Rafraîchissement COMPLET de l'interface
+        playerActive = target;
         refreshUI();
+        setupSwitchButtons();
 
-        // 5. Conséquence : L'adversaire attaque (sauf si c'était un switch après un KO)
-        setButtonsDisable(true);
-        pause(1.0, () -> {
-            executeOpponentAttack();
-            setButtonsDisable(false); // On redonne la main après la riposte
-        });
+        if (isForcedSwitch) {
+            // Cas 1 : Switch après un KO -> Pas d'attaque adverse, on reprend le tour normalement
+            battleLog.appendText("> " + playerActive.getName() + " entre sur le terrain !\n");
+            isForcedSwitch = false; // Reset du flag
+            setButtonsDisable(false);
+        } else {
+            // Cas 2 : Switch manuel -> L'adversaire attaque gratuitement
+            battleLog.appendText("> Reviens ! En avant " + playerActive.getName() + " !\n");
+            setButtonsDisable(true);
+            pause(1.0, () -> {
+                executeOpponentAttack();
+                // setButtonsDisable(false) est déjà géré à la fin de executeAttack
+            });
+        }
     }
 
     private void setupSwitchButtons() {
+        // 1. On vide les anciens boutons
+        switchActionsBox.getChildren().clear();
+
         List<Pokemon> members = playerTeam.getPokemons();
 
-        // Bouton pour le 2ème Pokémon (index 1)
-        if (members.size() > 1) {
-            switchPoke1.setText(members.get(1).getName());
-            switchPoke1.setVisible(true);
-            switchPoke1.setDisable(members.get(1).getHp().getStat() <= 0); // Grisé si KO
-        } else {
-            switchPoke1.setVisible(false);
-        }
+        // 2. On crée un bouton pour chaque Pokémon de l'équipe
+        for (int i = 0; i < members.size(); i++) {
+            Pokemon p = members.get(i);
+            Button btn = new Button(p.getName());
 
-        // Bouton pour le 3ème Pokémon (index 2)
-        if (members.size() > 2) {
-            switchPoke2.setText(members.get(2).getName());
-            switchPoke2.setVisible(true);
-            switchPoke2.setDisable(members.get(2).getHp().getStat() <= 0); // Grisé si KO
-        } else {
-            switchPoke2.setVisible(false);
+            // Design du bouton
+            btn.setPrefWidth(100);
+            btn.setStyle("-fx-background-radius: 10;");
+
+            // On ne peut pas switcher sur le Pokémon déjà au combat ou un Pokémon KO
+            boolean isCurrent = (p == playerActive);
+            boolean isDead = (p.getHp().getStat() <= 0);
+
+            if (isCurrent) btn.setStyle("-fx-background-color: #add8e6; -fx-background-radius: 10;"); // Bleu clair pour l'actif
+
+            btn.setDisable(isCurrent || isDead);
+
+            // On lie l'action de switch
+            final int index = i;
+            btn.setOnAction(e -> onSwitchRequested(index));
+
+            switchActionsBox.getChildren().add(btn);
         }
     }
 
@@ -185,9 +187,22 @@ public class BattleController {
     }
 
     private void setButtonsDisable(boolean state) {
-        move1.setDisable(state); move2.setDisable(state);
-        move3.setDisable(state); move4.setDisable(state);
-        switchPoke1.setDisable(state); switchPoke2.setDisable(state);
+        // 1. Gestion des boutons d'attaque (fixes)
+        move1.setDisable(state);
+        move2.setDisable(state);
+        move3.setDisable(state);
+        move4.setDisable(state);
+
+        // 2. Gestion des boutons de switch (dynamiques)
+        if (state) {
+            // Si on veut TOUT bloquer (pendant une animation d'attaque par exemple)
+            // On parcourt tous les enfants (Node) du HBox pour les désactiver
+            switchActionsBox.getChildren().forEach(node -> node.setDisable(true));
+        } else {
+            // Si on veut redonner la main au joueur, on ne fait pas un simple .setDisable(false)
+            // On rappelle setupSwitchButtons() qui sait quel Pokémon est mort ou déjà actif
+            setupSwitchButtons();
+        }
     }
 
     private void checkBattleEnd() {
@@ -198,15 +213,12 @@ public class BattleController {
             battleLog.appendText("VICTOIRE : Baojian est vaincu !\n");
             setButtonsDisable(true);
         } else if (playerActive.getHp().getStat() <= 0) {
-            // CAS CRITIQUE : Ton Pokémon est mort, on force le switch
+            // On active le flag de switch gratuit
+            isForcedSwitch = true;
             battleLog.appendText("Quel Pokémon doit remplacer " + playerActive.getName() + " ?\n");
 
-            // On laisse les attaques grisées mais on réactive les switchs
-            move1.setDisable(true); move2.setDisable(true);
-            move3.setDisable(true); move4.setDisable(true);
-            switchPoke1.setDisable(false);
-            switchPoke2.setDisable(false);
-            setupSwitchButtons(); // On rafraîchit les noms/états des boutons
+            setButtonsDisable(true); // Désactive tout...
+            setupSwitchButtons();     // ...mais setupSwitchButtons va réactiver les remplaçants
         }
     }
 

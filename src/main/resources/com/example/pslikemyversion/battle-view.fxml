@@ -37,13 +37,7 @@
                             </children>
                         </GridPane>
 
-                        <HBox alignment="CENTER" prefHeight="50.0" spacing="10.0" style="-fx-padding: 10 0 0 0;">
-                            <children>
-                                <Button fx:id="switchPoke1" text="Poke 2" />
-                                <Button fx:id="switchPoke2" text="Poke 3" />
-                                <Button fx:id="megaButton" style="-fx-background-color: #ffcc00;" text="Méga-Évolution" />
-                            </children>
-                        </HBox>
+                        <HBox fx:id="switchActionsBox" alignment="CENTER" prefHeight="50.0" spacing="10.0" style="-fx-padding: 10 0 0 0;" />
                     </children>
                 </VBox>
             </children>
