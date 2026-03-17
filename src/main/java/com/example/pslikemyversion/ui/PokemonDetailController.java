@@ -2,6 +2,7 @@ package com.example.pslikemyversion.ui;
 
 import com.example.pslikemyversion.core.GameSession;
 import com.example.pslikemyversion.core.SceneNavigator;
+import com.example.pslikemyversion.logic.passive.PassiveFactory;
 import com.example.pslikemyversion.logic.pokemons.Pokedex;
 import com.example.pslikemyversion.logic.pokemons.Pokemon;
 import com.example.pslikemyversion.logic.types.Type;
@@ -11,6 +12,8 @@ import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class PokemonDetailController {
 
@@ -24,40 +27,74 @@ public class PokemonDetailController {
 
     @FXML
     public void initialize() {
-        pokemonNameSelector.getItems().addAll(Pokedex.getAvailableSpecies());
-        abilitySelector.getItems().addAll(Pokedex.getAvailableAbilities());
-        itemSelector.getItems().addAll(Pokedex.getAvailableItems());
+        // Chargement initial des espèces et objets depuis la DB [cite: 360]
+        pokemonNameSelector.getItems().setAll(Pokedex.getAvailableSpecies());
+        itemSelector.getItems().setAll(Pokedex.getAllItems());
 
-        move1.getItems().addAll("Tackle", "Growl", "Ember", "Quick Attack");
-        move2.getItems().addAll("Tackle", "Growl", "Ember", "Quick Attack");
-        move3.getItems().addAll("Tackle", "Growl", "Ember", "Quick Attack");
-        move4.getItems().addAll("Tackle", "Growl", "Ember", "Quick Attack");
+        // Événement : Filtrer les talents et attaques selon le Pokémon choisi
+        pokemonNameSelector.setOnAction(e -> updateAvailableOptions(pokemonNameSelector.getValue()));
+    }
+
+    private void updateAvailableOptions(String name) {
+        if (name == null) return;
+        abilitySelector.getItems().setAll(Pokedex.getAbilitiesForPokemon(name));
+        List<String> moves = Pokedex.getMovesForPokemon(name);
+        for (ComboBox<String> cb : Arrays.asList(move1, move2, move3, move4)) {
+            cb.getItems().setAll(moves);
+        }
     }
 
     public void setPokemonSlot(int slotIndex) {
         this.currentSlot = slotIndex;
-        if (placeholderLabel != null) {
-            placeholderLabel.setText("Editing Slot #" + slotIndex);
-        }
+        placeholderLabel.setText("Modification du Slot #" + slotIndex);
 
+        // Persistance : On recharge le Pokémon s'il existe déjà dans la Team
         Pokemon existing = GameSession.getInstance().getPokemon(slotIndex);
         if (existing != null) {
             pokemonNameSelector.setValue(existing.getName());
+            updateAvailableOptions(existing.getName());
+            // On pourrait ici pré-remplir move1.setValue(), etc.
         }
     }
 
     @FXML
     private void onBackClicked(ActionEvent event) {
         String name = pokemonNameSelector.getValue();
-
         if (name != null) {
-            ArrayList<Type> types = Pokedex.getTypesFor(name);
-
-            Pokemon p = new Pokemon(name, types, null, 100, 100, 100, 100, 100, 100);
-
-            GameSession.getInstance().savePokemon(currentSlot, p);
+            saveSelectedPokemon(name);
         }
-
         SceneNavigator.switchScene((Node) event.getSource(), "teambuild-view.fxml");
+    }
+
+    private void saveSelectedPokemon(String name) {
+        // 1. Création de l'objet de base avec les stats DB (sp_attack corrigé)
+        Pokemon p = Pokedex.getPokemonByName(name);
+        if (p == null) return;
+
+        // 2. Mise à jour des types (Correction ArrayList : clear + addAll)
+        p.getTypes().clear();
+        p.getTypes().addAll(Pokedex.getTypesFor(name));
+
+        // 3. Attribution du talent et de l'objet (Polymorphisme via Factory) [cite: 344, 365]
+        if (abilitySelector.getValue() != null)
+            p.setAbility(PassiveFactory.createAbility(abilitySelector.getValue()));
+        if (itemSelector.getValue() != null)
+            p.setObject(PassiveFactory.createItem(itemSelector.getValue()));
+
+        // 4. Attribution des 4 attaques choisies [cite: 41, 65]
+        saveMoves(p);
+
+        // 5. Sauvegarde dans la Team de la GameSession [cite: 62]
+        GameSession.getInstance().savePokemon(currentSlot, p);
+    }
+
+    private void saveMoves(Pokemon p) {
+        List<ComboBox<String>> boxes = Arrays.asList(move1, move2, move3, move4);
+        p.getMoveSet().clear();
+        for (ComboBox<String> cb : boxes) {
+            if (cb.getValue() != null) {
+                p.getMoveSet().add(Pokedex.getMoveByName(cb.getValue()));
+            }
+        }
     }
 }
