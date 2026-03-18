@@ -3,6 +3,10 @@ package com.example.pslikemyversion.logic.pokemons;
 import com.example.pslikemyversion.logic.moves.Move;
 import com.example.pslikemyversion.logic.passive.Passive;
 import com.example.pslikemyversion.logic.types.Type;
+
+import com.example.pslikemyversion.logic.passive.Passive;
+import javafx.animation.Animation;
+
 import java.util.ArrayList;
 
 public class Pokemon implements IPokemon {
@@ -10,7 +14,7 @@ public class Pokemon implements IPokemon {
     private ArrayList<Type> types = new ArrayList<>();
     private ArrayList<Move> moveSet = new ArrayList<>();
     private ArrayList<Move> movePool = new ArrayList<>();
-    private ArrayList<Passive> statuses = new ArrayList<>();
+    private Passive status;
     private Passive ability;
     private Passive heldItem; // Changé de Object à Passive pour la cohérence POO
 
@@ -52,14 +56,30 @@ public class Pokemon implements IPokemon {
     public Stat getDefense() { return defense; }
     public Stat getSpecialDefense() { return specialDefense; }
     public Stat getSpeed() { return speed; }
+    public Passive getStatus() {
+        return this.status;
+    }
+    public void setStatus(Passive status) {
+        this.status = status;
+    }
 
     @Override
     public ArrayList<Move> getMoves() { return this.moveSet; }
 
     @Override
-    public void attack(Move move) {
-        // Logique de déclenchement des effets de l'attaque
-        move.mainEffect(this);
+    public void attack(Move move, Pokemon enemy) {
+        int damages = move.getDamages();
+        if (this.heldItem != null){
+            //this.heldItem.applyEffect();
+        }
+
+        if (this.ability != null){
+            //this.ability.applyEffect();
+        }
+
+        move.effect(enemy);
+
+        enemy.takeDamages(damages, move.getCategory(), move.getType());
     }
 
     @Override

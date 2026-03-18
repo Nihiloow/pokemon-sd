@@ -23,14 +23,8 @@ public abstract class Move implements Imove {
     public String getCategory() { return category; }
     public Type getType() { return type; }
 
-    // --- CORRECTION : Implémentation par défaut des méthodes de Imove ---
     @Override
-    public void mainEffect(Pokemon pokemon) {
-        // Par défaut, l'attaque inflige juste des dégâts (géré par CombatSystem)
-    }
-
-    @Override
-    public void sideEffect(Pokemon pokemon) {
-        // Par défaut, pas d'effet secondaire (sera surchargé si besoin) [cite: 325]
+    public void effect(Pokemon pokemon) {
+        // needs overcharge
     }
 }
