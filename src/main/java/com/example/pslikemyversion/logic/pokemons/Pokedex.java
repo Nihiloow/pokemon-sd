@@ -13,7 +13,7 @@ public class Pokedex {
 
     public static List<String> getAvailableSpecies() {
         List<String> species = new ArrayList<>();
-        String query = "SELECT name FROM pokemon"; // Utilise la colonne 'name'
+        String query = "SELECT name FROM pokemon";
 
         try (Connection conn = DatabaseManager.getConnection();
              Statement stmt = conn.createStatement();
@@ -40,13 +40,13 @@ public class Pokedex {
             if (rs.next()) {
                 return new Pokemon(
                         rs.getString("name"),
-                        new ArrayList<>(), // Types à charger séparément
+                        new ArrayList<>(), // loads types separately
                         new ArrayList<>(), // Movepool
                         rs.getInt("hp"),
                         rs.getInt("attack"),
-                        rs.getInt("sp_attack"),  // <--- C'était 'spe_attack'
+                        rs.getInt("sp_attack"),
                         rs.getInt("defense"),
-                        rs.getInt("sp_defense"), // <--- C'était 'spe_defense'
+                        rs.getInt("sp_defense"),
                         rs.getInt("speed")
                 );
             }
@@ -56,13 +56,13 @@ public class Pokedex {
         return null;
     }
 
-    // Récupère uniquement les talents autorisés pour UN Pokémon précis
+    // gets talents allowed on said Pokémon
     public static List<String> getAbilitiesForPokemon(String pokemonName) {
         List<String> abilities = new ArrayList<>();
         String query = "SELECT a.name FROM ability a " +
                 "JOIN pokemon p ON p.ability_id = a.id " +
                 "WHERE p.name = ?";
-        // Note: Si tu as plusieurs talents par Poké, utilise une table de liaison
+
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, pokemonName);
@@ -72,7 +72,7 @@ public class Pokedex {
         return abilities;
     }
 
-    // Récupère uniquement les attaques autorisées (Movepool)
+    // Rgets movepool for Pokémon
     public static List<String> getMovesForPokemon(String pokemonName) {
         List<String> moves = new ArrayList<>();
         String query = "SELECT a.name FROM attack a " +
@@ -88,10 +88,10 @@ public class Pokedex {
         return moves;
     }
 
-    // Récupère la liste de tous les noms d'objets pour la ComboBox
+    // Gets list of objects
     public static List<String> getAllItems() {
         List<String> items = new ArrayList<>();
-        String query = "SELECT name FROM item"; // Basé sur ta structure DB
+        String query = "SELECT name FROM item";
 
         try (Connection conn = DatabaseManager.getConnection();
              Statement stmt = conn.createStatement();
@@ -106,7 +106,6 @@ public class Pokedex {
         return items;
     }
 
-    // Récupère la description d'un objet spécifique (Exigence du PDF )
     public static String getItemDescription(String itemName) {
         String query = "SELECT description FROM item WHERE name = ?";
         try (Connection conn = DatabaseManager.getConnection();
@@ -124,7 +123,6 @@ public class Pokedex {
 
     public static ArrayList<Type> getTypesFor(String pokemonName) {
         ArrayList<Type> types = new ArrayList<>();
-        // On récupère le nom du type1 et du type2 (si existant) via des JOIN
         String query = "SELECT t1.name AS type1, t2.name AS type2 " +
                 "FROM pokemon p " +
                 "JOIN type t1 ON p.type1_id = t1.id " +
@@ -136,34 +134,27 @@ public class Pokedex {
 
             pstmt.setString(1, pokemonName);
             ResultSet rs = pstmt.executeQuery();
-
             if (rs.next()) {
-                // Le premier type est obligatoire
                 types.add(new Type(rs.getString("type1")));
-
-                // Le deuxième type est optionnel (LEFT JOIN + check null)
                 String type2Name = rs.getString("type2");
                 if (type2Name != null) {
                     types.add(new Type(type2Name));
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) {e.printStackTrace();}
         return types;
     }
 
     public static Move getMoveByName(String moveName) {
         try {
-            // 1. On tente de trouver une classe spécifique (ex: "Poing-Feu" -> FirePunch)
-            // Note : Il faut définir une convention de nommage simple
+            // looks for class of move
             String className = "com.example.pslikemyversion.logic.moves.moveSet." + formatClassName(moveName);
             Class<?> clazz = Class.forName(className);
             Constructor<?> ctor = clazz.getConstructor();
             return (Move) ctor.newInstance();
 
         } catch (Exception e) {
-            // 2. Si aucune classe n'existe, on charge les données génériques de la DB
+            // case no class exists
             String query = "SELECT a.*, t.name AS type_name FROM attack a " +
                     "JOIN type t ON a.type_id = t.id WHERE a.name = ?";
             try (Connection conn = DatabaseManager.getConnection();
@@ -172,27 +163,22 @@ public class Pokedex {
                 ResultSet rs = pstmt.executeQuery();
 
                 if (rs.next()) {
-                    return new Move(
-                            rs.getString("name"),
+                    return new Move(rs.getString("name"),
                             "Generic Move",
                             new Type(rs.getString("type_name")),
                             rs.getInt("power"),
-                            rs.getString("category")
-                    ) {};
+                            rs.getString("category")) {};
                 }
             } catch (SQLException ex) { ex.printStackTrace(); }
         }
         return null;
     }
 
-    // Méthode utilitaire pour transformer "Poing-Feu" en "FirePunch" ou "Vampipoing" en "Vampipoing"
     private static String formatClassName(String name) {
         if (name.equalsIgnoreCase("Poing-Feu")) return "FirePunch";
-        // Tu peux ajouter d'autres exceptions ici ou utiliser une logique de CamelCase
         return name.replace(" ", "").replace("-", "");
     }
 
-    // À ajouter dans Pokedex.java
     public static void loadTypeInteractions(Type type) {
         String query = "SELECT t_atk.name AS attacker, ti.multiplier " +
                 "FROM type_interaction ti " +

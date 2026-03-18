@@ -27,11 +27,10 @@ public class PokemonDetailController {
 
     @FXML
     public void initialize() {
-        // Chargement initial des espèces et objets depuis la DB [cite: 360]
         pokemonNameSelector.getItems().setAll(Pokedex.getAvailableSpecies());
         itemSelector.getItems().setAll(Pokedex.getAllItems());
 
-        // Événement : Filtrer les talents et attaques selon le Pokémon choisi
+        // filters for chose Pokémon
         pokemonNameSelector.setOnAction(e -> updateAvailableOptions(pokemonNameSelector.getValue()));
     }
 
@@ -51,13 +50,13 @@ public class PokemonDetailController {
         Pokemon existing = GameSession.getInstance().getPokemon(slotIndex);
         if (existing != null) {
             pokemonNameSelector.setValue(existing.getName());
-            updateAvailableOptions(existing.getName()); // Charge les listes filtrées
+            updateAvailableOptions(existing.getName()); // loads filtered list
 
-            // RECHARGE LES CHOIX PRÉCÉDENTS
+            // reloads previous choice
             if (existing.getAbility() != null) abilitySelector.setValue(existing.getAbility().getName());
             if (existing.getHeldItem() != null) itemSelector.setValue(existing.getHeldItem().getName());
 
-            // Recharge les attaques (ex: première attaque)
+            // reloads attacks
             if (!existing.getMoveSet().isEmpty()) move1.setValue(existing.getMoveSet().get(0).getName());
         }
     }
@@ -72,24 +71,23 @@ public class PokemonDetailController {
     }
 
     private void saveSelectedPokemon(String name) {
-        // 1. Création de l'objet de base avec les stats DB (sp_attack corrigé)
+        // makes object with db data
         Pokemon p = Pokedex.getPokemonByName(name);
         if (p == null) return;
 
-        // 2. Mise à jour des types (Correction ArrayList : clear + addAll)
+        // updates types
         p.getTypes().clear();
         p.getTypes().addAll(Pokedex.getTypesFor(name));
 
-        // 3. Attribution du talent et de l'objet (Polymorphisme via Factory) [cite: 344, 365]
+        // attribute + object
         if (abilitySelector.getValue() != null)
             p.setAbility(PassiveFactory.createAbility(abilitySelector.getValue()));
         if (itemSelector.getValue() != null)
             p.setHeldItem(PassiveFactory.createItem(itemSelector.getValue()));
 
-        // 4. Attribution des 4 attaques choisies [cite: 41, 65]
         saveMoves(p);
 
-        // 5. Sauvegarde dans la Team de la GameSession [cite: 62]
+        // saves to team
         GameSession.getInstance().savePokemon(currentSlot, p);
     }
 

@@ -26,24 +26,21 @@ public class BattleController {
     private Team playerTeam;
     private Team opponentTeam;
     private boolean isForcedSwitch = false;
-    private int turnCount = 1; // Ajout du compteur de tour
+    private int turnCount = 1;
 
     @FXML
     public void initialize() {
-        // 1. Chargement de l'équipe du joueur
+        // loads team
         playerTeam = GameSession.getInstance().getPlayerTeam();
         playerActive = playerTeam.getActivePokemon();
 
-        // 2. Création de l'équipe adverse (3 Pokémon moins puissants)
+        // creates enemy team
         opponentTeam = new Team();
         String[] enemies = {"Cerfrousse", "Limonde", "Kraknoix"};
-
         for (String name : enemies) {
             Pokemon p = Pokedex.getPokemonByName(name);
             if (p != null) {
                 p.getTypes().addAll(Pokedex.getTypesFor(name));
-
-                // On lui donne son premier talent et ses attaques via la Réflexion
                 List<String> abilities = Pokedex.getAbilitiesForPokemon(name);
                 if (!abilities.isEmpty()) p.setAbility(PassiveFactory.createAbility(abilities.get(0)));
 
@@ -65,11 +62,10 @@ public class BattleController {
 
         playerName.setText(playerActive.getName());
         opponentName.setText(opponentActive.getName());
-
         updateHpBar(playerHpBar, playerActive);
         updateHpBar(opponentHpBar, opponentActive);
 
-        // Liaison des boutons aux vraies attaques du MoveSet
+        // links buttons to moves
         List<Move> moves = playerActive.getMoveSet();
         Button[] buttons = {move1, move2, move3, move4};
 
@@ -91,7 +87,7 @@ public class BattleController {
         battleLog.appendText("\n--- TURN " + turnCount + " ---\n");
         turnCount++;
 
-        // Speed Check : Qui est le plus rapide ?
+        // Speed Check
         boolean playerFirst = playerActive.getSpeed().getRealStat() >= opponentActive.getSpeed().getRealStat();
 
         if (playerFirst) {
@@ -116,9 +112,9 @@ public class BattleController {
 
         if (defender.getHp().getStat() <= 0) {
             battleLog.appendText("!!! " + defender.getName() + " est hors de combat !!!\n");
-            checkBattleEnd(); // Cette méthode gère maintenant la réactivation partielle
+            checkBattleEnd();
         } else {
-            // Personne n'est mort ? On redonne le contrôle total au joueur
+            // gives back control if no one ko
             setButtonsDisable(false);
         }
     }
@@ -133,93 +129,76 @@ public class BattleController {
     private void onSwitchRequested(int index) {
         Pokemon target = playerTeam.getPokemons().get(index);
 
-        // Logique de switch habituelle...
+        // switch logic
         playerTeam.setActivePokemonIndex(index);
         playerActive = target;
         refreshUI();
         setupSwitchButtons();
 
-        if (isForcedSwitch) {
-            // Cas 1 : Switch après un KO -> Pas d'attaque adverse, on reprend le tour normalement
+        if (isForcedSwitch) { // forced ko switch
             battleLog.appendText("> " + playerActive.getName() + " entre sur le terrain !\n");
             isForcedSwitch = false; // Reset du flag
             setButtonsDisable(false);
-        } else {
-            // Cas 2 : Switch manuel -> L'adversaire attaque gratuitement
+        } else { // manual switch
             battleLog.appendText("> Reviens ! En avant " + playerActive.getName() + " !\n");
             setButtonsDisable(true);
             pause(1.0, () -> {
                 executeOpponentAttack();
-                // setButtonsDisable(false) est déjà géré à la fin de executeAttack
             });
         }
     }
 
     private void setupSwitchButtons() {
-        // 1. On vide les anciens boutons
         switchActionsBox.getChildren().clear();
-
         List<Pokemon> members = playerTeam.getPokemons();
 
-        // 2. On crée un bouton pour chaque Pokémon de l'équipe
-        for (int i = 0; i < members.size(); i++) {
+        for (int i = 0; i < members.size(); i++) { // switch buttons
             Pokemon p = members.get(i);
             Button btn = new Button(p.getName());
 
-            // Design du bouton
-            btn.setPrefWidth(100);
+            btn.setPrefWidth(100); // Design du bouton
             btn.setStyle("-fx-background-radius: 10;");
 
-            // On ne peut pas switcher sur le Pokémon déjà au combat ou un Pokémon KO
-            boolean isCurrent = (p == playerActive);
+            boolean isCurrent = (p == playerActive); // can't switch on ko pokemon
             boolean isDead = (p.getHp().getStat() <= 0);
 
-            if (isCurrent) btn.setStyle("-fx-background-color: #add8e6; -fx-background-radius: 10;"); // Bleu clair pour l'actif
-
+            if (isCurrent) btn.setStyle("-fx-background-color: #add8e6; -fx-background-radius: 10;");
             btn.setDisable(isCurrent || isDead);
-
-            // On lie l'action de switch
             final int index = i;
             btn.setOnAction(e -> onSwitchRequested(index));
-
             switchActionsBox.getChildren().add(btn);
         }
     }
 
     private void updateHpBar(ProgressBar bar, Pokemon p) {
-        // On force le cast en double pour éviter que 80/100 ne donne 0 au lieu de 0.8
         double current = (double) p.getHp().getStat();
         double max = (double) p.getMaxHp();
         double ratio = current / max;
 
-        // Mise à jour visuelle immédiate
+        // update
         bar.setProgress(ratio);
 
-        // Changement de couleur dynamique (Feedback visuel du PDF)
+        // dynamic colours
         if (ratio < 0.2) {
-            bar.setStyle("-fx-accent: #e74c3c;"); // Rouge critique
+            bar.setStyle("-fx-accent: #e74c3c;");
         } else if (ratio < 0.5) {
-            bar.setStyle("-fx-accent: #f1c40f;"); // Orange attention
+            bar.setStyle("-fx-accent: #f1c40f;");
         } else {
-            bar.setStyle("-fx-accent: #2ecc71;"); // Vert santé
+            bar.setStyle("-fx-accent: #2ecc71;");
         }
     }
 
     private void setButtonsDisable(boolean state) {
-        // 1. Gestion des boutons d'attaque (fixes)
         move1.setDisable(state);
         move2.setDisable(state);
         move3.setDisable(state);
         move4.setDisable(state);
 
-        // 2. Gestion des boutons de switch (dynamiques)
         if (state) {
-            // Si on veut TOUT bloquer (pendant une animation d'attaque par exemple)
-            // On parcourt tous les enfants (Node) du HBox pour les désactiver
+            // blocks everything
             switchActionsBox.getChildren().forEach(node -> node.setDisable(true));
         } else {
-            // Si on veut redonner la main au joueur, on ne fait pas un simple .setDisable(false)
-            // On rappelle setupSwitchButtons() qui sait quel Pokémon est mort ou déjà actif
+            // partial block
             setupSwitchButtons();
         }
     }
@@ -228,19 +207,15 @@ public class BattleController {
         if (playerTeam.isDefeated()) {
             battleLog.appendText("\nDEFEAT: All your team is KO...");
             setButtonsDisable(true);
-        }
-        else if (opponentTeam.isDefeated()) {
+        } else if (opponentTeam.isDefeated()) {
             battleLog.appendText("\nVICTORY: The opponent team is defeated!");
             setButtonsDisable(true);
-        }
-        else if (playerActive.getHp().getStat() <= 0) {
+        } else if (playerActive.getHp().getStat() <= 0) {
             isForcedSwitch = true;
             battleLog.appendText("\nWho will replace " + playerActive.getName() + "?");
             setButtonsDisable(true);
             setupSwitchButtons();
-        }
-        else if (opponentActive.getHp().getStat() <= 0) {
-            // SWITCH AUTOMATIQUE DE L'ADVERSAIRE
+        } else if (opponentActive.getHp().getStat() <= 0) { // auto switch enemy
             for (int i = 0; i < opponentTeam.getPokemons().size(); i++) {
                 Pokemon next = opponentTeam.getPokemons().get(i);
                 if (next.getHp().getStat() > 0) {
@@ -248,7 +223,7 @@ public class BattleController {
                     opponentActive = next;
                     battleLog.appendText("\nOpponent sends " + opponentActive.getName() + "!");
                     refreshUI();
-                    setButtonsDisable(false); // Le joueur peut attaquer le nouveau venu
+                    setButtonsDisable(false); // player can attack new enemy
                     return;
                 }
             }
@@ -262,22 +237,22 @@ public class BattleController {
     }
 
     private void applyEndTurnEffects() {
-        // 1. Effet sur le joueur
+        // player effect
         if (playerActive.getStatus() != null) {
             playerActive.getStatus().applyEffect(playerActive, opponentActive);
             battleLog.appendText("\n" + playerActive.getName() + " is hurt by its " + playerActive.getStatus().getName() + "!");
         }
 
-        // 2. Effet sur l'adversaire
+        // enemy effect
         if (opponentActive.getStatus() != null) {
             opponentActive.getStatus().applyEffect(opponentActive, playerActive);
             battleLog.appendText("\n" + opponentActive.getName() + " is hurt by its " + opponentActive.getStatus().getName() + "!");
         }
 
-        // 3. Mise à jour visuelle après les dégâts de poison/brûlure
+        // vasual update
         updateHpBar(playerHpBar, playerActive);
         updateHpBar(opponentHpBar, opponentActive);
 
-        checkBattleEnd(); // On vérifie si les dégâts de statut ont mis quelqu'un KO
+        checkBattleEnd(); // checks for ko
     }
 }

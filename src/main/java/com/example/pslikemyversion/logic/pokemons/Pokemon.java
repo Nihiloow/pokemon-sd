@@ -16,7 +16,7 @@ public class Pokemon implements IPokemon {
     private ArrayList<Move> movePool = new ArrayList<>();
     private Passive status;
     private Passive ability;
-    private Passive heldItem; // Changé de Object à Passive pour la cohérence POO
+    private Passive heldItem;
 
     private int maxHp;
     private Stat hp, attack, specialAttack, defense, specialDefense, speed;

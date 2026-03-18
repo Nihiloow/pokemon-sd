@@ -23,7 +23,6 @@ public class Team {
         }
     }
 
-    // Vérifie si toute l'équipe est KO [cite: 32]
     public boolean isDefeated() {
         return pokemons.stream().allMatch(p -> p.getHp().getStat() <= 0);
     }

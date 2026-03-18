@@ -6,7 +6,6 @@ public abstract class Passive {
     protected String name;
     protected String description;
 
-    // Le super() recevra les chaînes de caractères extraites de la DB
     public Passive(String name, String description) {
         this.name = name;
         this.description = description;
