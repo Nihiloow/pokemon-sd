@@ -137,7 +137,7 @@ public class BattleController {
 
         if (isForcedSwitch) { // forced ko switch
             battleLog.appendText("> " + playerActive.getName() + " entre sur le terrain !\n");
-            isForcedSwitch = false; // Reset du flag
+            isForcedSwitch = false; // Flag reset
             setButtonsDisable(false);
         } else { // manual switch
             battleLog.appendText("> Reviens ! En avant " + playerActive.getName() + " !\n");
