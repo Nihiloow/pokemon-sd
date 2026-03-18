@@ -67,26 +67,9 @@ public class Pokemon implements IPokemon {
     public ArrayList<Move> getMoves() { return this.moveSet; }
 
     @Override
-    public void attack(Move move, Pokemon enemy) {
-        int damages = move.getDamages();
-        if (this.heldItem != null){
-            //this.heldItem.applyEffect();
-        }
-
-        if (this.ability != null){
-            //this.ability.applyEffect();
-        }
-
-        move.effect(enemy);
-
-        enemy.takeDamages(damages, move.getCategory(), move.getType());
-    }
-
-    @Override
     public void takeDamages(int amount, String damageType, Type type) {
         int currentHp = this.hp.getStat();
         int newHp = Math.max(0, currentHp - amount);
         this.hp.setStat(newHp);
-        System.out.println(this.name + " a maintenant " + newHp + " PV.");
     }
 }

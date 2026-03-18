@@ -3,6 +3,7 @@ package com.example.pslikemyversion.ui;
 import com.example.pslikemyversion.core.GameSession;
 import com.example.pslikemyversion.engine.CombatSystem;
 import com.example.pslikemyversion.logic.moves.Move;
+import com.example.pslikemyversion.logic.passive.PassiveFactory;
 import com.example.pslikemyversion.logic.pokemons.Pokedex;
 import com.example.pslikemyversion.logic.pokemons.Pokemon;
 import com.example.pslikemyversion.logic.pokemons.Team;
@@ -23,21 +24,37 @@ public class BattleController {
     private Pokemon playerActive;
     private Pokemon opponentActive;
     private Team playerTeam;
+    private Team opponentTeam;
     private boolean isForcedSwitch = false;
+    private int turnCount = 1; // Ajout du compteur de tour
 
     @FXML
     public void initialize() {
-        // 1. Chargement de la vraie équipe du joueur
+        // 1. Chargement de l'équipe du joueur
         playerTeam = GameSession.getInstance().getPlayerTeam();
         playerActive = playerTeam.getActivePokemon();
 
-        // 2. Création d'un adversaire réel via la DB pour le test
-        opponentActive = Pokedex.getPokemonByName("Baojian");
-        if (opponentActive != null) {
-            opponentActive.getTypes().addAll(Pokedex.getTypesFor("Baojian"));
-            // On lui donne une attaque par défaut pour la riposte
-            opponentActive.getMoveSet().add(Pokedex.getMoveByName("Chute de Glace"));
+        // 2. Création de l'équipe adverse (3 Pokémon moins puissants)
+        opponentTeam = new Team();
+        String[] enemies = {"Cerfrousse", "Limonde", "Kraknoix"};
+
+        for (String name : enemies) {
+            Pokemon p = Pokedex.getPokemonByName(name);
+            if (p != null) {
+                p.getTypes().addAll(Pokedex.getTypesFor(name));
+
+                // On lui donne son premier talent et ses attaques via la Réflexion
+                List<String> abilities = Pokedex.getAbilitiesForPokemon(name);
+                if (!abilities.isEmpty()) p.setAbility(PassiveFactory.createAbility(abilities.get(0)));
+
+                List<String> moves = Pokedex.getMovesForPokemon(name);
+                for (int i = 0; i < Math.min(2, moves.size()); i++) {
+                    p.getMoveSet().add(Pokedex.getMoveByName(moves.get(i)));
+                }
+                opponentTeam.addPokemon(p);
+            }
         }
+        opponentActive = opponentTeam.getActivePokemon();
 
         refreshUI();
         setupSwitchButtons();
@@ -71,8 +88,10 @@ public class BattleController {
 
     private void handleTurn(Move playerMove) {
         setButtonsDisable(true);
+        battleLog.appendText("\n--- TURN " + turnCount + " ---\n");
+        turnCount++;
 
-        // ETAPE 1 : Déterminer l'ordre selon la Vitesse
+        // Speed Check : Qui est le plus rapide ?
         boolean playerFirst = playerActive.getSpeed().getRealStat() >= opponentActive.getSpeed().getRealStat();
 
         if (playerFirst) {
@@ -207,18 +226,32 @@ public class BattleController {
 
     private void checkBattleEnd() {
         if (playerTeam.isDefeated()) {
-            battleLog.appendText("DEFAITE : Toute votre équipe est KO...\n");
+            battleLog.appendText("\nDEFEAT: All your team is KO...");
             setButtonsDisable(true);
-        } else if (opponentActive.getHp().getStat() <= 0) {
-            battleLog.appendText("VICTOIRE : Baojian est vaincu !\n");
+        }
+        else if (opponentTeam.isDefeated()) {
+            battleLog.appendText("\nVICTORY: The opponent team is defeated!");
             setButtonsDisable(true);
-        } else if (playerActive.getHp().getStat() <= 0) {
-            // On active le flag de switch gratuit
+        }
+        else if (playerActive.getHp().getStat() <= 0) {
             isForcedSwitch = true;
-            battleLog.appendText("Quel Pokémon doit remplacer " + playerActive.getName() + " ?\n");
-
-            setButtonsDisable(true); // Désactive tout...
-            setupSwitchButtons();     // ...mais setupSwitchButtons va réactiver les remplaçants
+            battleLog.appendText("\nWho will replace " + playerActive.getName() + "?");
+            setButtonsDisable(true);
+            setupSwitchButtons();
+        }
+        else if (opponentActive.getHp().getStat() <= 0) {
+            // SWITCH AUTOMATIQUE DE L'ADVERSAIRE
+            for (int i = 0; i < opponentTeam.getPokemons().size(); i++) {
+                Pokemon next = opponentTeam.getPokemons().get(i);
+                if (next.getHp().getStat() > 0) {
+                    opponentTeam.setActivePokemonIndex(i);
+                    opponentActive = next;
+                    battleLog.appendText("\nOpponent sends " + opponentActive.getName() + "!");
+                    refreshUI();
+                    setButtonsDisable(false); // Le joueur peut attaquer le nouveau venu
+                    return;
+                }
+            }
         }
     }
 
@@ -226,5 +259,25 @@ public class BattleController {
         PauseTransition pause = new PauseTransition(Duration.seconds(seconds));
         pause.setOnFinished(e -> action.run());
         pause.play();
+    }
+
+    private void applyEndTurnEffects() {
+        // 1. Effet sur le joueur
+        if (playerActive.getStatus() != null) {
+            playerActive.getStatus().applyEffect(playerActive, opponentActive);
+            battleLog.appendText("\n" + playerActive.getName() + " is hurt by its " + playerActive.getStatus().getName() + "!");
+        }
+
+        // 2. Effet sur l'adversaire
+        if (opponentActive.getStatus() != null) {
+            opponentActive.getStatus().applyEffect(opponentActive, playerActive);
+            battleLog.appendText("\n" + opponentActive.getName() + " is hurt by its " + opponentActive.getStatus().getName() + "!");
+        }
+
+        // 3. Mise à jour visuelle après les dégâts de poison/brûlure
+        updateHpBar(playerHpBar, playerActive);
+        updateHpBar(opponentHpBar, opponentActive);
+
+        checkBattleEnd(); // On vérifie si les dégâts de statut ont mis quelqu'un KO
     }
 }

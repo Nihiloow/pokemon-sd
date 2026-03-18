@@ -7,6 +7,7 @@ import com.example.pslikemyversion.logic.types.Type;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.lang.reflect.Constructor;
 
 public class Pokedex {
 
@@ -153,26 +154,42 @@ public class Pokedex {
     }
 
     public static Move getMoveByName(String moveName) {
-        String query = "SELECT * FROM attack WHERE name = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
+        try {
+            // 1. On tente de trouver une classe spécifique (ex: "Poing-Feu" -> FirePunch)
+            // Note : Il faut définir une convention de nommage simple
+            String className = "com.example.pslikemyversion.logic.moves.moveSet." + formatClassName(moveName);
+            Class<?> clazz = Class.forName(className);
+            Constructor<?> ctor = clazz.getConstructor();
+            return (Move) ctor.newInstance();
 
-            pstmt.setString(1, moveName);
-            ResultSet rs = pstmt.executeQuery();
+        } catch (Exception e) {
+            // 2. Si aucune classe n'existe, on charge les données génériques de la DB
+            String query = "SELECT a.*, t.name AS type_name FROM attack a " +
+                    "JOIN type t ON a.type_id = t.id WHERE a.name = ?";
+            try (Connection conn = DatabaseManager.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(query)) {
+                pstmt.setString(1, moveName);
+                ResultSet rs = pstmt.executeQuery();
 
-            if (rs.next()) {
-                // On crée une version concrète de Move (ex: PhysicalMove ou SpecialMove)
-                // Pour simplifier ici, on utilise une classe anonyme ou une classe générique
-                return new Move(
-                        rs.getString("name"),
-                        "Description",
-                        new Type("Normal"), // À lier au vrai type plus tard
-                        rs.getInt("power"), // On récupère la puissance de la DB
-                        rs.getString("category") // On récupère Physical/Special
-                ) {};
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
+                if (rs.next()) {
+                    return new Move(
+                            rs.getString("name"),
+                            "Generic Move",
+                            new Type(rs.getString("type_name")),
+                            rs.getInt("power"),
+                            rs.getString("category")
+                    ) {};
+                }
+            } catch (SQLException ex) { ex.printStackTrace(); }
+        }
         return null;
+    }
+
+    // Méthode utilitaire pour transformer "Poing-Feu" en "FirePunch" ou "Vampipoing" en "Vampipoing"
+    private static String formatClassName(String name) {
+        if (name.equalsIgnoreCase("Poing-Feu")) return "FirePunch";
+        // Tu peux ajouter d'autres exceptions ici ou utiliser une logique de CamelCase
+        return name.replace(" ", "").replace("-", "");
     }
 
     // À ajouter dans Pokedex.java

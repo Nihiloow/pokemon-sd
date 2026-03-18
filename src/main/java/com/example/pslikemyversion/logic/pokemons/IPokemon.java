@@ -7,6 +7,5 @@ import java.util.ArrayList;
 
 public interface IPokemon {
     public ArrayList<Move> getMoves();
-    public void attack(Move move, Pokemon enemy);
     public void takeDamages(int amount, String damageType, Type type);
 }
